@@ -6,6 +6,17 @@ option(PRODUCTION_BUILD "Make this a production build" OFF)
 
 project(triangle)
 
+
+include(FetchContent)
+
+FetchContent_Declare(
+	raylib
+	GIT_REPOSITORY https://github.com/raysan5/raylib
+	GIT_TAG 5.5.0
+	SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/external/raylib
+)
+FetchContent_MakeAvailable(raylib)
+
 set(BUILD_SHARED_LIBS OFF)
 add_subdirectory(external/raylib)
 
