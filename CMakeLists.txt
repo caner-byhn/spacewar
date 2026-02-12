@@ -4,26 +4,25 @@ set(CMAKE_CXX_STANDARD 17)
 
 option(PRODUCTION_BUILD "Make this a production build" OFF)
 
-project(triangle)
+project(spacewar)
 
-
+set(BUILD_SHARED_LIBS OFF)
 include(FetchContent)
-
 FetchContent_Declare(
 	raylib
 	GIT_REPOSITORY https://github.com/raysan5/raylib
-	GIT_TAG 5.5.0
+	GIT_TAG 5.5
 	SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/external/raylib
 )
-FetchContent_MakeAvailable(raylib)
+FetchContent_GetProperties(raylib)
+if(NOT raylib_POPULATED)
+    FetchContent_Populate(raylib)
+endif()
 
-set(BUILD_SHARED_LIBS OFF)
-add_subdirectory(external/raylib)
 
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/external/raylib)
 file(GLOB_RECURSE MY_SOURCES CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp")
-
 add_executable("${CMAKE_PROJECT_NAME}")
-
 set_property(TARGET "${CMAKE_PROJECT_NAME}" PROPERTY CXX_STANDARD 17)
 
 

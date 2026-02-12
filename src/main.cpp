@@ -511,12 +511,6 @@ void Enemy::decide(Player& player) {
         action = Decision::CHASE;
         return;
     }
-    else
-    {
-        action = Decision::FIGHT;
-        return;
-    }
-
 
     action = Decision::STEADY;
 
