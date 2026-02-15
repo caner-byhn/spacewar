@@ -7,7 +7,9 @@
 #include "game_utils.h"
 
 
-//TODO: Handle enemy decisions. And enemy doesn't have boosting animation yet.
+// TODO: Make the enemy fight AI rethink in random intervals rather than a set timer. This is easily doable.
+// And the fighting AI might need optimizations as some of the operations there can cause problems with
+// large amounts of enemies.
 
 
 static int SCREEN_WIDTH = 1920;
@@ -317,7 +319,7 @@ void Background::draw(Camera2D& playerCamera) {
     offset.y -= cameraDelta.y;
 
     lastCameraTarget = playerCamera.target;
-    
+
     offset.x = fmodf(offset.x, static_cast<float>(SCREEN_WIDTH));
     offset.y = fmodf(offset.y, static_cast<float>(SCREEN_HEIGHT));
 
@@ -359,8 +361,9 @@ struct Enemy {
     Vector2 velocity;
 
     Decision action = Decision::STEADY;
-
-
+    bool fighting = false;
+    float fightDecisionTimer = 0.0f;
+    float resetFightDirTime = 1.f;
 
     float angle = 0.f;
     float decisionAngle;
@@ -375,10 +378,10 @@ struct Enemy {
 
     Enemy(Player& player, std::default_random_engine& enemyGenerator);
     void draw();
-    void update(Player& player);
+    void update(Player& player, std::default_random_engine& generator);
     void move(float dt);
     void chase(Vector2 playerPos, float dt);
-    void fight(Vector2 playerPos, float dt);
+    void fight(Vector2 playerPos, float dt, std::default_random_engine& generator);
     void decide(Player& player);
 };
 std::vector<Enemy> ActiveEnemies;
@@ -404,7 +407,7 @@ void Enemy::draw() {
     DrawTexturePro(texture, src, dst, origin, angle * RAD2DEG - 90, WHITE);
 }
 
-void Enemy::update(Player& player) {
+void Enemy::update(Player& player, std::default_random_engine& generator) {
     decide(player);
 
     float dt = GetFrameTime();
@@ -412,10 +415,19 @@ void Enemy::update(Player& player) {
 
     Vector2 playerPos = player.pos;
 
+    fightDecisionTimer += dt;
+    if(fightDecisionTimer > resetFightDirTime) {
+        fighting = false;
+        fightDecisionTimer = 0.f;
+    }
+
 
     switch(action) {
         case Decision::CHASE:
             chase(playerPos, dt);
+            break;
+        case Decision::FIGHT:
+            fight(playerPos, dt, generator);
             break;
         case Decision::STEADY:
             move(dt);
@@ -477,28 +489,70 @@ void Enemy::chase(Vector2 playerPos, float dt) {
     move(dt);
 }
 
-void Enemy::fight(Vector2 playerPos, float dt) {
+void Enemy::fight(Vector2 playerPos, float dt, std::default_random_engine& generator) {
+    std::uniform_real_distribution<float> randomAngle(static_cast<float>((-30 * (PI/180))), static_cast<float>((30 * (PI/180))));
+    std::uniform_int_distribution<int> randomOffset(0,200);
+    std::uniform_int_distribution<int> randomDirection(1,2);
+
     float randomAngleOffset;
     float randomDistanceOffset;
+    float randomDir;
 
-    if (playerPos.x < pos.x && playerPos.y < pos.y)
-    {
+    if(!fighting) {
+        randomAngleOffset = randomAngle(generator);
+        randomDistanceOffset = randomOffset(generator);
+        randomDir = randomDirection(generator);
 
+        //top left
+        if (playerPos.x < pos.x - randomDistanceOffset && playerPos.y < pos.y - randomDistanceOffset)
+        {
+            if(randomDir == 1)
+                decisionAngle = (3*PI)/2 + randomAngleOffset;
+            else
+                decisionAngle = PI + randomAngleOffset;
+        }
+        //top right
+        if (playerPos.x > pos.x + randomDistanceOffset && playerPos.y < pos.y - randomDistanceOffset)
+        {
+            if(randomDir == 1)
+                decisionAngle = 0.f + randomAngleOffset;
+            else
+                decisionAngle = (3*PI)/2 + randomAngleOffset;
+        }
+        //bottom right
+        if (playerPos.x > pos.x + randomDistanceOffset && playerPos.y > pos.y + randomDistanceOffset)
+        {
+            if(randomDir == 1)
+                decisionAngle = 0.f + randomAngleOffset;
+            else
+                decisionAngle = PI/2 + randomAngleOffset;
+        }
+        //bottom left
+        if (playerPos.x < pos.x - randomDistanceOffset && playerPos.y > pos.y + randomDistanceOffset)
+        {
+            if(randomDir == 1)
+                decisionAngle = PI/2 + randomAngleOffset;
+            else
+                decisionAngle = PI + randomAngleOffset;
+        }
+
+        fighting = true;
     }
-    if (playerPos.x > pos.x && playerPos.y < pos.y)
+
+    float step = rotationSpeed * dt;
+    float delta = decisionAngle - angle;
+    delta = atan2f(sinf(delta), cosf(delta));
+
+    if (fabs(delta) <= step)
     {
-
+        angle = decisionAngle;
     }
-    if (playerPos.x > pos.x && playerPos.y > pos.y)
+    else
     {
-
-    }
-    if (playerPos.x < pos.x && playerPos.y > pos.y)
-    {
-
+        angle += step * (delta > 0 ? 1.0f : -1.0f);
     }
 
-    //TODO: Decide what to do here, probably decide a semi randomized angle from a deterministic direction. Meaning decide the direction/angle, then add random offset.
+    move(dt);
 }
 
 
@@ -509,11 +563,16 @@ void Enemy::decide(Player& player) {
     if (getDistance(pos, playerPos) > chaseRange)
     {
         action = Decision::CHASE;
+        fighting = false;
+        return;
+    }
+    else {
+        action = Decision::FIGHT;
         return;
     }
 
     action = Decision::STEADY;
-
+    fighting = false;
     //TODO: setup a system that is semi randomized movement around the player.
 }
 
@@ -533,7 +592,7 @@ int main() {
     while (!WindowShouldClose()) {
 
         player.update();
-        enemy.update(player);
+        enemy.update(player, enemyGenerator);
 
         updateActiveProjectiles();
 
