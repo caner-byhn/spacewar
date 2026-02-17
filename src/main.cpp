@@ -26,7 +26,16 @@ struct ProjectileFrames {
     std::vector<Texture2D> frames;
 };
 
-std::array<ProjectileFrames, (int)ProjectileType::COUNT> projectileAssets;
+static std::array<ProjectileFrames, (int)ProjectileType::COUNT> projectileAssets;
+static std::vector<Texture2D> playerExhaust;
+
+void loadPlayerExhaustFrames() {
+    playerExhaust.push_back(LoadTexture("../assets/exhaust/exhaust_01.png"));
+    playerExhaust.push_back(LoadTexture("../assets/exhaust/exhaust_02.png"));
+    playerExhaust.push_back(LoadTexture("../assets/exhaust/exhaust_03.png"));
+    playerExhaust.push_back(LoadTexture("../assets/exhaust/exhaust_04.png"));
+    playerExhaust.push_back(LoadTexture("../assets/exhaust/exhaust_05.png"));
+}
 
 void loadProjectileFrames() {
     projectileAssets[(int)ProjectileType::PLASMA].frames = {
@@ -133,8 +142,8 @@ struct Player {
 
     Vector2 crosshairPos = {0.f, 0.f};
 
-    std::vector<Texture2D> exhaustFrames;
-    int exhaustFrameCount = 5; // Do not touch this unless you change the assets for exhaust.
+    std::vector<Texture2D> exhaustFrames = playerExhaust;
+    int exhaustFrameCount = playerExhaust.size(); // Do not touch this unless you change the assets for exhaust.
     float frameTime = 0.1f;
     float timer = 0.0f;
     int frame = 0;
@@ -159,14 +168,6 @@ struct Player {
 
 Player::Player() {
     texture = LoadTexture("../assets/player_b_m.png");
-
-    exhaustFrames.resize(exhaustFrameCount);
-    exhaustFrames[0] = LoadTexture("../assets/exhaust/exhaust_01.png");
-    exhaustFrames[1] = LoadTexture("../assets/exhaust/exhaust_02.png");
-    exhaustFrames[2] = LoadTexture("../assets/exhaust/exhaust_03.png");
-    exhaustFrames[3] = LoadTexture("../assets/exhaust/exhaust_04.png");
-    exhaustFrames[4] = LoadTexture("../assets/exhaust/exhaust_05.png");
-
     camera.zoom = 1.0f;
     camera.offset = {(float)SCREEN_WIDTH / 2.0f, (float)SCREEN_HEIGHT / 2.0f};
 }
@@ -185,9 +186,9 @@ void Player::draw() {
     Rectangle dst = { pos.x, pos.y, width, height }; // something something world space
     Vector2 origin = { width/2, height/2 };
 
-    float exhaustInset = 3.0f;
+    float exhaustInsert = 3.0f;
     float exhaustAlign = 2.0f;
-    Vector2 exhaustLocal = { 0.0f - exhaustAlign, height/2 - exhaustInset }; // something something local space
+    Vector2 exhaustLocal = { 0.0f - exhaustAlign, height/2 - exhaustInsert }; // something something local space
     Vector2 exhaustOffsetWorld = { exhaustLocal.x * cosf(angle) - exhaustLocal.y * sinf(angle), exhaustLocal.x * sinf(angle) + exhaustLocal.y * cosf(angle) }; // rotate the offset in the local(?) space
 
     Rectangle exhaust_src = { 0, 0, exhaust_width, exhaust_height };
@@ -360,6 +361,12 @@ struct Enemy {
     Texture2D texture;
     Vector2 velocity;
 
+    std::vector<Texture2D> exhaustFrames = playerExhaust;
+    int exhaustFrameCount = playerExhaust.size(); // Do not touch this unless you change the assets for exhaust.
+    float frameTime = 0.1f;
+    float timer = 0.0f;
+    int frame = 0;
+
     Decision action = Decision::STEADY;
     bool fighting = false;
     float fightDecisionTimer = 0.0f;
@@ -372,8 +379,6 @@ struct Enemy {
     float speed = 4.0f;
     float acceleration = 200.f;
     float maxSpeed = 500.f;
-
-
 
 
     Enemy(Player& player, std::default_random_engine& enemyGenerator);
@@ -399,12 +404,33 @@ void Enemy::draw() {
     float width = static_cast<float>(texture.width);
     float height = static_cast<float>(texture.height);
 
+    float exhaust_width = static_cast<float>(exhaustFrames[0].width);
+    float exhaust_height = static_cast<float>(exhaustFrames[0].height);
+    float exhaust_offset = (width - exhaust_width) / 2;
+
     Rectangle src = { 0, 0, width, height }; // something something local space
     Rectangle dst = { pos.x, pos.y, width, height }; // something something world space
     Vector2 origin = { width/2, height/2 };
 
+    float adjustedAngle = angle + PI/2;
+
+    float exhaustInsert = 3.0f;
+    float exhaustAlign = 1.0f;
+    Vector2 exhaustLocal = { 0.0f - exhaustAlign, height/2 - exhaustInsert }; // something something local space
+    Vector2 exhaustOffsetWorld = { exhaustLocal.x * cosf(adjustedAngle) - exhaustLocal.y * sinf(adjustedAngle), exhaustLocal.x * sinf(adjustedAngle) + exhaustLocal.y * cosf(adjustedAngle) }; // rotate the offset in the local(?) space
+
+    Rectangle exhaust_src = { 0, 0, exhaust_width, exhaust_height };
+    Rectangle exhaust_dst = { pos.x + exhaustOffsetWorld.x, pos.y + exhaustOffsetWorld.y, exhaust_width, exhaust_height };
+    Vector2 exhaust_origin = { exhaust_width/2, exhaust_height/2 };
+
+    timer += GetFrameTime();
+    if(timer > frameTime) {
+        timer = 0.0f;
+        frame = (frame + 1) % exhaustFrameCount;
+    }
 
     DrawTexturePro(texture, src, dst, origin, angle * RAD2DEG - 90, WHITE);
+    DrawTexturePro(exhaustFrames[frame], exhaust_src, exhaust_dst, exhaust_origin, angle * RAD2DEG + 90, YELLOW);
 }
 
 void Enemy::update(Player& player, std::default_random_engine& generator) {
@@ -417,8 +443,10 @@ void Enemy::update(Player& player, std::default_random_engine& generator) {
 
     fightDecisionTimer += dt;
     if(fightDecisionTimer > resetFightDirTime) {
+        static std::uniform_real_distribution<float> randTime(0.5f,1.5f);
         fighting = false;
         fightDecisionTimer = 0.f;
+        resetFightDirTime = randTime(generator);
     }
 
 
@@ -490,9 +518,9 @@ void Enemy::chase(Vector2 playerPos, float dt) {
 }
 
 void Enemy::fight(Vector2 playerPos, float dt, std::default_random_engine& generator) {
-    std::uniform_real_distribution<float> randomAngle(static_cast<float>((-30 * (PI/180))), static_cast<float>((30 * (PI/180))));
-    std::uniform_int_distribution<int> randomOffset(0,200);
-    std::uniform_int_distribution<int> randomDirection(1,2);
+    static std::uniform_real_distribution<float> randomAngle(static_cast<float>((-30 * (PI/180))), static_cast<float>((30 * (PI/180))));
+    static std::uniform_int_distribution<int> randomOffset(-75,75);
+    static std::uniform_int_distribution<int> randomDirection(1,2);
 
     float randomAngleOffset;
     float randomDistanceOffset;
@@ -580,13 +608,13 @@ void Enemy::decide(Player& player) {
 int main() {
     InitWindow(SCREEN_WIDTH, SCREEN_HEIGHT, "Triangle");
     SetTargetFPS(165);
+    loadProjectileFrames();
+    loadPlayerExhaustFrames();
 
     Player player;
     Background background;
 
     auto enemyGenerator = initEnemyGenerator();
-    loadProjectileFrames();
-
     Enemy enemy(player, enemyGenerator);
 
     while (!WindowShouldClose()) {

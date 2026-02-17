@@ -2,5 +2,5 @@
 .cache/
 build/
 external/raylib
-
+*.clangd
 *.exe
