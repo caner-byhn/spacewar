@@ -101,7 +101,7 @@ void World::spawnEnemy(Player& player, std::default_random_engine& enemyGenerato
 
 void World::updateActiveEnemies(Player& player, std::default_random_engine& generator) {
     for(auto& en : ActiveEnemies) {
-        en.update(player, generator);
+        en.update(player, generator, *this);
     }
 }
 
@@ -128,10 +128,43 @@ void World::updateActiveProjectiles() {
             ++it;
         }
     }
+
+    for (auto it = enemyProjectiles.begin(); it != enemyProjectiles.end(); ) {
+        it->pos.x += it->velocity.x * dt;
+        it->pos.y += it->velocity.y * dt;
+
+        it->distanceTraveled += it->speed * dt;
+
+        if (it->distanceTraveled >= it->maxDistanceTraveled) {
+            std::cout << "Projectile destroyed at pos: " << it->pos.x << "," << it->pos.y << "\n";
+            it = enemyProjectiles.erase(it);
+        }
+        else {
+            ++it;
+        }
+    }
 }
 
 void World::drawActiveProjectiles() {
     for (Projectile& proj : playerProjectiles) {
+        int width = projectileAssets[(int)proj.type].frames[0].width;
+        int height = projectileAssets[(int)proj.type].frames[0].height;
+
+        Vector2 projOrigin = {(float)width / 2, (float)height / 2};
+
+        Rectangle src = {0, 0, (float)width, (float)height};
+        Rectangle dest = {proj.pos.x, proj.pos.y, (float)width, (float)height};
+
+        proj.frameTimer += GetFrameTime();
+        if (proj.frameTimer > proj.frameTime) {
+            proj.frameTimer = 0.0f;
+            proj.frame = (proj.frame + 1) % projectileAssets[(int)proj.type].frames.size();
+        }
+
+        DrawTexturePro(projectileAssets[(int)proj.type].frames[proj.frame], src, dest, projOrigin, proj.angle * RAD2DEG, WHITE);
+    }
+
+    for (Projectile& proj : enemyProjectiles) {
         int width = projectileAssets[(int)proj.type].frames[0].width;
         int height = projectileAssets[(int)proj.type].frames[0].height;
 

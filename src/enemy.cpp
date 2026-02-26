@@ -1,4 +1,5 @@
 #include "enemy.hpp"
+#include "player.hpp"
 #include "raylib.h"
 #include "game_utils.hpp"
 #include "world.hpp"
@@ -46,7 +47,7 @@ void Enemy::draw() {
 }
 
 
-void Enemy::update(Player& player, std::default_random_engine& generator) {
+void Enemy::update(Player& player, std::default_random_engine& generator, World& world) {
     decide(player);
 
     float dt = GetFrameTime();
@@ -78,6 +79,7 @@ void Enemy::update(Player& player, std::default_random_engine& generator) {
             velocity.y *= damping;
             break;
     }
+    burstFire(player, world);
 }
 
 
@@ -216,4 +218,36 @@ void Enemy::decide(Player& player) {
     action = Decision::STEADY;
     fighting = false;
     //TODO: setup a system that is semi randomized movement around the player.
+}
+
+
+void Enemy::burstFire(Player& player, World& world) {
+    Vector2 posDiff = {player.pos.x + player.lastSpeed.x - pos.x, player.pos.y + player.lastSpeed.y - pos.y};
+    Vector2 targetDir = normalize(posDiff);
+    float dirAngle = atan2(targetDir.y, targetDir.x) + PI/2;
+
+    burstTimeCounter += GetFrameTime();
+    if (!firing) {
+        if (burstTimeCounter >= burstCooldown) {
+            firing = true;
+            burstTimeCounter = 0.f;
+        }
+    }
+    else {
+        if (burstTimeCounter >= burstInterval && shotsCount < maxShots) {
+            std::cout << "Projectile angle::" << dirAngle * RAD2DEG << "\n";
+
+            Projectile newProj(ProjectileType::VULCAN, dirAngle);
+            newProj.pos = pos;
+            newProj.velocity = {targetDir.x * newProj.speed, targetDir.y * newProj.speed};
+            world.enemyProjectiles.push_back(newProj);
+            shotsCount++;
+            burstTimeCounter = 0.f;
+        }
+        else if (shotsCount >= maxShots) {
+            shotsCount = 0;
+            burstTimeCounter = 0.f;
+            firing = false;
+        }
+    }
 }

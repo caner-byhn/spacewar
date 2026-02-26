@@ -1,5 +1,6 @@
 #include "world.hpp"
 #include "player.hpp"
+#include "SAT.hpp"
 #include "game_utils.hpp"
 #include "raylib.h"
 
@@ -41,12 +42,18 @@ void Player::draw() {
 
     DrawTexturePro(texture, src, dst, origin, angle * RAD2DEG, WHITE);
 
+    //Draw collision box for debug.
+    Color colColor = GREEN;
+    drawSATdebugOutline(width/2, height/2, pos, angle, colColor);
+
+
     if (boosting) {
         DrawTexturePro(exhaustFrames[frame], exhaust_src, exhaust_dst, exhaust_origin, angle * RAD2DEG, WHITE);
     }
 
     DrawCircleLines(crosshairPos.x, crosshairPos.y, 3.f, WHITE);
 }
+
 
 void Player::move() {
     float dt = GetFrameTime();
@@ -88,9 +95,12 @@ void Player::move() {
     velocity.x = forward.x * forwardSpeed + right.x * sideSpeed;
     velocity.y = forward.y * forwardSpeed + right.x * sideSpeed;
 
+    lastSpeed = {velocity.x * dt, velocity.y * dt};
+
     pos.x += velocity.x * dt;
     pos.y += velocity.y * dt;
 }
+
 
 void Player::mainGunControl(World& world) {
     float width = static_cast<float>(texture.width);

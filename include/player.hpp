@@ -29,6 +29,7 @@ struct Player {
     float speed = 2.0f;
     float maxSpeed = 400.f;
     float acceleration = 200.0f;
+    Vector2 lastSpeed;
 
     ProjectileType mainGunAmmoType;
 

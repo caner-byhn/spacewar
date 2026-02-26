@@ -3,6 +3,7 @@
 #include <iostream>
 #include <math.h>
 #include <random>
+#include <vector>
 #include "raylib.h"
 
 
@@ -16,6 +17,14 @@ inline Vector2 rotatePoint(Vector2 p, float angle){
     rotate.y = p.x * s + p.y * c;
 
     return rotate;
+}
+
+inline float dot(Vector2 v1, Vector2 v2) {
+    return v1.x*v2.x + v1.y*v2.y;
+}
+
+inline Vector2 subVec2(Vector2 v1, Vector2 v2) {
+    return { v1.x - v2.x, v1.y - v2.y };
 }
 
 inline float getDistance(Vector2 v1, Vector2 v2) {

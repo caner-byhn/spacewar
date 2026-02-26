@@ -43,17 +43,20 @@ struct Enemy {
     float maxSpeed = 500.f;
 
     bool firing = false;
+    float burstTimeCounter = 0.f;
     float burstInterval = 0.5f;
-    float burstTimer = 1.5f;
+    float burstCooldown = 1.5f;
+    unsigned int shotsCount = 0;
+    unsigned int maxShots = 3;
 
     Enemy(Player& player, std::default_random_engine& enemyGenerator, World& world);
     void draw();
-    void update(Player& player, std::default_random_engine& generator);
+    void update(Player& player, std::default_random_engine& generator, World& world);
     void move(float dt);
 
     void chase(Vector2 playerPos, float dt);
     void fight(Vector2 playerPos, float dt, std::default_random_engine& generator);
     void decide(Player& player);
 
-    void burstFire(Player& player);
+    void burstFire(Player& player, World& world);
 };
