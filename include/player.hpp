@@ -2,6 +2,7 @@
 
 #include <vector>
 #include "raylib.h"
+#include "SAT.hpp"
 
 
 struct World;
@@ -13,6 +14,9 @@ struct Player {
     Vector2 velocity = { 0.f, 0.f };
     Texture2D texture;
     Camera2D camera = { 0 };
+
+    SAT sat;
+    bool isColliding = false;
 
     Vector2 crosshairPos = {0.f, 0.f};
 
@@ -38,4 +42,5 @@ struct Player {
     void update(World &world);
     void move();
     void mainGunControl(World &world);
+    void checkCollision(World &world);
 };

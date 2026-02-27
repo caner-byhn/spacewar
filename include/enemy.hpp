@@ -2,6 +2,7 @@
 
 #include "raylib.h"
 #include "player.hpp"
+#include "SAT.hpp"
 #include <random>
 
 struct World;
@@ -22,6 +23,9 @@ struct Enemy {
     Vector2 pos;
     Texture2D& texture;
     Vector2 velocity;
+
+    SAT sat;
+    bool isColliding = false;
 
     std::vector<Texture2D>& exhaustFrames;
     int exhaustFrameCount; // Do not touch this unless you change the assets for exhaust.

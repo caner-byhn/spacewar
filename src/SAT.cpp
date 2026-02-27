@@ -16,8 +16,8 @@ void updateSATAxisRotation(SAT& sat, float angleRad) {
 bool checkOverlapOnAxis(const SAT& A, const SAT& B, Vector2 separatingAxis) {
     float dist = fabs(dot(subVec2(B.origin, A.origin), separatingAxis));
 
-    float rA = A.halfSize.x * dot(separatingAxis, A.axisX) + A.halfSize.y * dot(separatingAxis, A.axisY);
-    float rB = B.halfSize.x * dot(separatingAxis, B.axisX) + A.halfSize.y * dot(separatingAxis, B.axisY);
+    float rA = A.halfSize.x * fabs(dot(separatingAxis, A.axisX)) + A.halfSize.y * fabs(dot(separatingAxis, A.axisY));
+    float rB = B.halfSize.x * fabs(dot(separatingAxis, B.axisX)) + B.halfSize.y * fabs(dot(separatingAxis, B.axisY));
 
     return dist <= rA + rB;
 }

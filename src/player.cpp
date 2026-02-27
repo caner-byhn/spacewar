@@ -3,12 +3,17 @@
 #include "SAT.hpp"
 #include "game_utils.hpp"
 #include "raylib.h"
+#include <vector>
 
 
 Player::Player(World &world) : exhaustFrames(world.playerExhaust), exhaustFrameCount(world.playerExhaust.size()), mainGunAmmoType(ProjectileType::PLASMA) {
     texture = LoadTexture("../assets/player_b_m.png");
     camera.zoom = 1.0f;
     camera.offset = {(float)GetScreenWidth() / 2.0f, (float)GetScreenHeight() / 2.0f};
+
+    Vector2 halfSize = {static_cast<float>(texture.width) / 4, static_cast<float>(texture.height) / 4};
+    sat.halfSize = halfSize;
+    sat.origin = pos;
 }
 
 
@@ -42,8 +47,15 @@ void Player::draw() {
 
     DrawTexturePro(texture, src, dst, origin, angle * RAD2DEG, WHITE);
 
+    DrawLineEx(pos, {pos.x, pos.y-10.f}, 1.f, RED);
+
     //Draw collision box for debug.
     Color colColor = GREEN;
+
+    if (isColliding) {
+        colColor = RED;
+    }
+
     drawSATdebugOutline(width/2, height/2, pos, angle, colColor);
 
 
@@ -136,10 +148,29 @@ void Player::update(World& world) {
     move();
     mainGunControl(world);
 
+    sat.origin = pos;
+    updateSATAxisRotation(sat, angle);
+
+    checkCollision(world);
+
     float camera_x_target = pos.x;
     float camera_y_target = pos.y;
 
     camera.target = {camera_x_target, camera_y_target};
 
     crosshairPos = GetScreenToWorld2D(GetMousePosition(), camera);
+}
+
+
+void Player::checkCollision(World& world) {
+    isColliding = false;
+    for (auto& e : world.ActiveEnemies) {
+        if (SATvsSAT(sat, e.sat)) {
+            isColliding = true;
+            e.isColliding = true;
+        }
+        else {
+            e.isColliding = false;
+        }
+    }
 }

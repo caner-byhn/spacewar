@@ -3,7 +3,6 @@
 #include <iostream>
 #include <math.h>
 #include <random>
-#include <vector>
 #include "raylib.h"
 
 

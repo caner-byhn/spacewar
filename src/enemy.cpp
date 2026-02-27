@@ -1,4 +1,5 @@
 #include "enemy.hpp"
+#include "SAT.hpp"
 #include "player.hpp"
 #include "raylib.h"
 #include "game_utils.hpp"
@@ -10,6 +11,10 @@ Enemy::Enemy(Player& player, std::default_random_engine& enemyGenerator, World& 
     Vector2 playerPos = player.pos;
     pos = rollRandomEnemySpawnPosition(playerPos, enemyGenerator);
     std::cout << "Enemy generated at pos: " << (pos.x + (float)GetScreenWidth()/2) << "," << (pos.y + (float)GetScreenHeight()/2) << "\n";
+
+    Vector2 halfSize = {static_cast<float>(texture.width) / 4,static_cast<float>(texture.height) / 4};
+    sat.origin = pos;
+    sat.halfSize = halfSize;
 }
 
 
@@ -42,13 +47,23 @@ void Enemy::draw() {
         frame = (frame + 1) % exhaustFrameCount;
     }
 
+    Color colColor = GREEN;
+
+    if (isColliding) {
+        colColor = RED;
+    }
+
     DrawTexturePro(texture, src, dst, origin, angle * RAD2DEG - 90, WHITE);
     DrawTexturePro(exhaustFrames[frame], exhaust_src, exhaust_dst, exhaust_origin, angle * RAD2DEG + 90, YELLOW);
+    drawSATdebugOutline(width/2, height/2, pos, angle, colColor);
 }
 
 
 void Enemy::update(Player& player, std::default_random_engine& generator, World& world) {
     decide(player);
+
+    sat.origin = pos;
+    updateSATAxisRotation(sat, angle);
 
     float dt = GetFrameTime();
     float damping = 0.98f;
@@ -235,8 +250,6 @@ void Enemy::burstFire(Player& player, World& world) {
     }
     else {
         if (burstTimeCounter >= burstInterval && shotsCount < maxShots) {
-            std::cout << "Projectile angle::" << dirAngle * RAD2DEG << "\n";
-
             Projectile newProj(ProjectileType::VULCAN, dirAngle);
             newProj.pos = pos;
             newProj.velocity = {targetDir.x * newProj.speed, targetDir.y * newProj.speed};
