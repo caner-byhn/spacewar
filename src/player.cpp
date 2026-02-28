@@ -173,4 +173,15 @@ void Player::checkCollision(World& world) {
             e.isColliding = false;
         }
     }
+
+    for (auto it = world.enemyProjectiles.begin(); it != world.enemyProjectiles.end(); ) {
+        if (SATvsPoint(sat, it->pos)) {
+            isColliding = true;
+            std::cout << "Enemy projectile hit and destroyed at pos: " << it->pos.x << "," << it->pos.y << "\n";
+            it = world.enemyProjectiles.erase(it);
+        }
+        else {
+            ++it;
+        }
+    }
 }

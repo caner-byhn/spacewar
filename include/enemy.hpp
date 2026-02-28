@@ -63,4 +63,5 @@ struct Enemy {
     void decide(Player& player);
 
     void burstFire(Player& player, World& world);
+    void checkCollision(World& world);
 };

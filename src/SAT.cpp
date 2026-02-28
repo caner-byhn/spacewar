@@ -22,6 +22,22 @@ bool checkOverlapOnAxis(const SAT& A, const SAT& B, Vector2 separatingAxis) {
     return dist <= rA + rB;
 }
 
+bool SATvsPoint(const SAT &A, Vector2 point) {
+    {
+        float dist = fabs(dot(subVec2(point, A.origin), A.axisX));
+        float extent = A.halfSize.x;
+        if (dist > extent) return false;
+    }
+
+    {
+        float dist = fabs(dot(subVec2(point, A.origin), A.axisY));
+        float extent = A.halfSize.y;
+        if (dist > extent) return false;
+    }
+
+    return true;
+}
+
 bool SATvsSAT(const SAT& A, const SAT& B) {
     if (!checkOverlapOnAxis(A, B, A.axisX)) return false;
     if (!checkOverlapOnAxis(A, B, A.axisY)) return false;

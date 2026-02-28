@@ -264,3 +264,16 @@ void Enemy::burstFire(Player& player, World& world) {
         }
     }
 }
+
+void Enemy::checkCollision(World& world) {
+    for (auto it = world.playerProjectiles.begin(); it != world.playerProjectiles.end(); ) {
+        if (SATvsPoint(sat, it->pos)) {
+            isColliding = true;
+            std::cout << "Player projectile hit and destroyed at pos: " << it->pos.x << "," << it->pos.y << "\n";
+            it = world.playerProjectiles.erase(it);
+        }
+        else {
+            ++it;
+        }
+    }
+}

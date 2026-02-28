@@ -136,7 +136,7 @@ void World::updateActiveProjectiles() {
         it->distanceTraveled += it->speed * dt;
 
         if (it->distanceTraveled >= it->maxDistanceTraveled) {
-            std::cout << "Projectile destroyed at pos: " << it->pos.x << "," << it->pos.y << "\n";
+            std::cout << "Projectile hit and destroyed at pos: " << it->pos.x << "," << it->pos.y << "\n";
             it = enemyProjectiles.erase(it);
         }
         else {
