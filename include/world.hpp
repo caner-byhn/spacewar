@@ -50,6 +50,7 @@ struct Background {
 struct World {
     std::array<ProjectileFrames, (int)ProjectileType::COUNT> projectileAssets;
     std::vector<Texture2D> playerExhaust;
+    std::vector<Texture2D> explosion;
 
     Texture2D enemyTex; //this is a placeholder
     std::vector<Enemy> ActiveEnemies;
@@ -60,6 +61,7 @@ struct World {
 
     World();
     void loadPlayerExhaustFrames();
+    void loadExplosionFrames();
     void loadProjectileFrames();
     void loadEnemyTextures();
 

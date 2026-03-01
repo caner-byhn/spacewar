@@ -61,6 +61,7 @@ void Background::draw(Camera2D& playerCamera) {
 
 World::World() {
     loadPlayerExhaustFrames();
+    loadExplosionFrames();
     loadProjectileFrames();
     loadEnemyTextures();
 }
@@ -71,6 +72,20 @@ void World::loadPlayerExhaustFrames() {
     playerExhaust.push_back(LoadTexture("../assets/exhaust/exhaust_03.png"));
     playerExhaust.push_back(LoadTexture("../assets/exhaust/exhaust_04.png"));
     playerExhaust.push_back(LoadTexture("../assets/exhaust/exhaust_05.png"));
+}
+
+void World::loadExplosionFrames() {
+    explosion.push_back(LoadTexture("../assets/explosions/explosion_1_01.png"));
+    explosion.push_back(LoadTexture("../assets/explosions/explosion_1_02.png"));
+    explosion.push_back(LoadTexture("../assets/explosions/explosion_1_03.png"));
+    explosion.push_back(LoadTexture("../assets/explosions/explosion_1_04.png"));
+    explosion.push_back(LoadTexture("../assets/explosions/explosion_1_05.png"));
+    explosion.push_back(LoadTexture("../assets/explosions/explosion_1_06.png"));
+    explosion.push_back(LoadTexture("../assets/explosions/explosion_1_07.png"));
+    explosion.push_back(LoadTexture("../assets/explosions/explosion_1_08.png"));
+    explosion.push_back(LoadTexture("../assets/explosions/explosion_1_09.png"));
+    explosion.push_back(LoadTexture("../assets/explosions/explosion_1_10.png"));
+    explosion.push_back(LoadTexture("../assets/explosions/explosion_1_11.png"));
 }
 
 void World::loadProjectileFrames() {
@@ -136,7 +151,7 @@ void World::updateActiveProjectiles() {
         it->distanceTraveled += it->speed * dt;
 
         if (it->distanceTraveled >= it->maxDistanceTraveled) {
-            std::cout << "Projectile hit and destroyed at pos: " << it->pos.x << "," << it->pos.y << "\n";
+            std::cout << "Projectile reached maximum distance at pos: " << it->pos.x << "," << it->pos.y << "\n";
             it = enemyProjectiles.erase(it);
         }
         else {

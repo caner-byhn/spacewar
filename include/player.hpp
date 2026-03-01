@@ -8,6 +8,16 @@
 struct World;
 enum class ProjectileType;
 
+struct FrameTimer {
+    float frameTime;
+    float timer;
+    int frame;
+};
+
+enum class PlayerState {
+    ALIVE,
+    DEAD
+};
 
 struct Player {
     Vector2 pos = { (float)GetScreenWidth() / 2, (float)GetScreenHeight() / 2 };
@@ -17,14 +27,17 @@ struct Player {
 
     SAT sat;
     bool isColliding = false;
+    PlayerState playerState = PlayerState::ALIVE;
 
     Vector2 crosshairPos = {0.f, 0.f};
 
+    std::vector<Texture2D>& explosions;
+    int explosionFrameCount;
+    FrameTimer explodeTimer = {0.1f, 0.0f, 0};
+
     std::vector<Texture2D>& exhaustFrames;
     int exhaustFrameCount; // Do not touch this unless you change the assets for exhaust.
-    float frameTime = 0.1f;
-    float timer = 0.0f;
-    int frame = 0;
+    FrameTimer exhaustTimer = {0.1f, 0.0f, 0};
 
     float angle = 0.0f;
     float rotationSpeed = 3.0f;

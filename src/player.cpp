@@ -6,7 +6,7 @@
 #include <vector>
 
 
-Player::Player(World &world) : exhaustFrames(world.playerExhaust), exhaustFrameCount(world.playerExhaust.size()), mainGunAmmoType(ProjectileType::PLASMA) {
+Player::Player(World &world) : explosions(world.explosion), explosionFrameCount(world.explosion.size()), exhaustFrames(world.playerExhaust), exhaustFrameCount(world.playerExhaust.size()), mainGunAmmoType(ProjectileType::PLASMA) {
     texture = LoadTexture("../assets/player_b_m.png");
     camera.zoom = 1.0f;
     camera.offset = {(float)GetScreenWidth() / 2.0f, (float)GetScreenHeight() / 2.0f};
@@ -19,12 +19,20 @@ Player::Player(World &world) : exhaustFrames(world.playerExhaust), exhaustFrameC
 
 //I don't even know what the fuck is this function calculating at this point.
 void Player::draw() {
+    //This is generally bad. Eventually abstract rectangles away, its fine for now to make sure things work.
     float width = static_cast<float>(texture.width);
     float height = static_cast<float>(texture.height);
 
     float exhaust_width = static_cast<float>(exhaustFrames[0].width);
     float exhaust_height = static_cast<float>(exhaustFrames[0].height);
     float exhaust_offset = (width - exhaust_width) / 2;
+
+    float explode_width = static_cast<float>(explosions[0].width);
+    float explode_height = static_cast<float>(explosions[0].height);
+
+    Rectangle explode_src = {0, 0, explode_width, explode_height};
+    Rectangle explode_dst = {pos.x, pos.y, explode_width, explode_height};
+    Vector2 explode_origin = {explode_width/2, explode_height/2};
 
     Rectangle src = { 0, 0, width, height }; // something something local space
     Rectangle dst = { pos.x, pos.y, width, height }; // something something world space
@@ -39,28 +47,36 @@ void Player::draw() {
     Rectangle exhaust_dst = { pos.x + exhaustOffsetWorld.x, pos.y + exhaustOffsetWorld.y, exhaust_width, exhaust_height };
     Vector2 exhaust_origin = { exhaust_width/2, exhaust_height/2 };
 
-    timer += GetFrameTime();
-    if(timer > frameTime) {
-        timer = 0.0f;
-        frame = (frame + 1) % exhaustFrameCount;
+    if (playerState == PlayerState::ALIVE) {
+        exhaustTimer.timer += GetFrameTime();
+        if(exhaustTimer.timer > exhaustTimer.frameTime) {
+            exhaustTimer.timer = 0.0f;
+            exhaustTimer.frame = (exhaustTimer.frame + 1) % exhaustFrameCount;
+        }
+
+        DrawTexturePro(texture, src, dst, origin, angle * RAD2DEG, WHITE);
+        if (boosting) {
+            DrawTexturePro(exhaustFrames[exhaustTimer.frame], exhaust_src, exhaust_dst, exhaust_origin, angle * RAD2DEG, WHITE);
+        }
+
+        //Draw collision box for debug.
+        Color colColor = GREEN;
+
+        if (isColliding) {
+            colColor = RED;
+            playerState = PlayerState::DEAD;
+        }
+
+        drawSATdebugOutline(width/2, height/2, pos, angle, colColor);
     }
 
-    DrawTexturePro(texture, src, dst, origin, angle * RAD2DEG, WHITE);
-
-    DrawLineEx(pos, {pos.x, pos.y-10.f}, 1.f, RED);
-
-    //Draw collision box for debug.
-    Color colColor = GREEN;
-
-    if (isColliding) {
-        colColor = RED;
-    }
-
-    drawSATdebugOutline(width/2, height/2, pos, angle, colColor);
-
-
-    if (boosting) {
-        DrawTexturePro(exhaustFrames[frame], exhaust_src, exhaust_dst, exhaust_origin, angle * RAD2DEG, WHITE);
+    if (playerState == PlayerState::DEAD && explodeTimer.frame < explosions.size() - 1) {
+        explodeTimer.timer += GetFrameTime();
+        if (explodeTimer.timer > explodeTimer.frameTime) {
+            explodeTimer.timer = 0.0f;
+            explodeTimer.frame++;
+        }
+        DrawTexturePro(explosions[explodeTimer.frame], explode_src, explode_dst, explode_origin, 0, WHITE);
     }
 
     DrawCircleLines(crosshairPos.x, crosshairPos.y, 3.f, WHITE);
@@ -145,6 +161,8 @@ void Player::mainGunControl(World& world) {
 
 
 void Player::update(World& world) {
+    if (playerState == PlayerState::DEAD) return;
+
     move();
     mainGunControl(world);
 
