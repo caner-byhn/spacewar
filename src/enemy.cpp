@@ -7,24 +7,36 @@
 #include <iostream>
 
 
-Enemy::Enemy(Player& player, std::default_random_engine& enemyGenerator, World& world) : texture(world.enemyTex), exhaustFrames(world.playerExhaust), exhaustFrameCount(world.playerExhaust.size()) {
+Enemy::Enemy(Player& player, std::default_random_engine& enemyGenerator, World& world) :
+                texture(&world.enemyTex), explosions(&world.explosion),
+                explosionFrameCount(world.explosion.size()),
+                exhaustFrames(&world.playerExhaust),
+                exhaustFrameCount(world.playerExhaust.size())
+{
     Vector2 playerPos = player.pos;
     pos = rollRandomEnemySpawnPosition(playerPos, enemyGenerator);
     std::cout << "Enemy generated at pos: " << (pos.x + (float)GetScreenWidth()/2) << "," << (pos.y + (float)GetScreenHeight()/2) << "\n";
 
-    Vector2 halfSize = {static_cast<float>(texture.width) / 4,static_cast<float>(texture.height) / 4};
+    Vector2 halfSize = {static_cast<float>((*texture).width) / 4,static_cast<float>((*texture).height) / 4};
     sat.origin = pos;
     sat.halfSize = halfSize;
 }
 
 
 void Enemy::draw() {
-    float width = static_cast<float>(texture.width);
-    float height = static_cast<float>(texture.height);
+    float width = static_cast<float>((*texture).width);
+    float height = static_cast<float>((*texture).height);
 
-    float exhaust_width = static_cast<float>(exhaustFrames[0].width);
-    float exhaust_height = static_cast<float>(exhaustFrames[0].height);
+    float exhaust_width = static_cast<float>((*exhaustFrames)[0].width);
+    float exhaust_height = static_cast<float>((*exhaustFrames)[0].height);
     float exhaust_offset = (width - exhaust_width) / 2;
+
+    float explode_width = static_cast<float>((*explosions)[0].width);
+    float explode_height = static_cast<float>((*explosions)[0].height);
+
+    Rectangle explode_src = {0, 0, explode_width, explode_height};
+    Rectangle explode_dst = {pos.x, pos.y, explode_width, explode_height};
+    Vector2 explode_origin = {explode_width/2, explode_height/2};
 
     Rectangle src = { 0, 0, width, height }; // something something local space
     Rectangle dst = { pos.x, pos.y, width, height }; // something something world space
@@ -41,29 +53,50 @@ void Enemy::draw() {
     Rectangle exhaust_dst = { pos.x + exhaustOffsetWorld.x, pos.y + exhaustOffsetWorld.y, exhaust_width, exhaust_height };
     Vector2 exhaust_origin = { exhaust_width/2, exhaust_height/2 };
 
-    timer += GetFrameTime();
-    if(timer > frameTime) {
-        timer = 0.0f;
-        frame = (frame + 1) % exhaustFrameCount;
+    if (isAlive) {
+        exhaustTimer.timer += GetFrameTime();
+        if(exhaustTimer.timer > exhaustTimer.frameTime) {
+            exhaustTimer.timer = 0.0f;
+            exhaustTimer.frame = (exhaustTimer.frame + 1) % exhaustFrameCount;
+        }
+
+        DrawTexturePro(*texture, src, dst, origin, angle * RAD2DEG - 90, WHITE);
+        DrawTexturePro((*exhaustFrames)[frame], exhaust_src, exhaust_dst, exhaust_origin, angle * RAD2DEG + 90, YELLOW);
+
+        //Draw collision box for debug.
+        Color colColor = GREEN;
+
+        if (isColliding) {
+            colColor = RED;
+            isAlive = false;
+        }
+
+        //drawSATdebugOutline(width/2, height/2, pos, angle, colColor);
     }
 
-    Color colColor = GREEN;
-
-    if (isColliding) {
-        colColor = RED;
+    if (!isAlive && explodeTimer.frame < (*explosions).size() - 1) {
+        explodeTimer.timer += GetFrameTime();
+        if (explodeTimer.timer > explodeTimer.frameTime) {
+            explodeTimer.timer = 0.0f;
+            explodeTimer.frame++;
+        }
+        DrawTexturePro((*explosions)[explodeTimer.frame], explode_src, explode_dst, explode_origin, 0, WHITE);
     }
-
-    DrawTexturePro(texture, src, dst, origin, angle * RAD2DEG - 90, WHITE);
-    DrawTexturePro(exhaustFrames[frame], exhaust_src, exhaust_dst, exhaust_origin, angle * RAD2DEG + 90, YELLOW);
-    drawSATdebugOutline(width/2, height/2, pos, angle, colColor);
 }
 
 
 void Enemy::update(Player& player, std::default_random_engine& generator, World& world) {
+    if (!isAlive) return;
+
     decide(player);
 
     sat.origin = pos;
     updateSATAxisRotation(sat, angle);
+
+    checkCollision(world);
+    if (explodeTimer.frame > (*explosions).size() - 1) {
+        readyToRemove = true;
+    }
 
     float dt = GetFrameTime();
     float damping = 0.98f;

@@ -6,7 +6,12 @@
 #include <vector>
 
 
-Player::Player(World &world) : explosions(world.explosion), explosionFrameCount(world.explosion.size()), exhaustFrames(world.playerExhaust), exhaustFrameCount(world.playerExhaust.size()), mainGunAmmoType(ProjectileType::PLASMA) {
+Player::Player(World &world) : explosions(world.explosion),
+                    explosionFrameCount(world.explosion.size()),
+                    exhaustFrames(world.playerExhaust),
+                    exhaustFrameCount(world.playerExhaust.size()),
+                    mainGunAmmoType(ProjectileType::PLASMA)
+{
     texture = LoadTexture("../assets/player_b_m.png");
     camera.zoom = 1.0f;
     camera.offset = {(float)GetScreenWidth() / 2.0f, (float)GetScreenHeight() / 2.0f};
@@ -64,10 +69,9 @@ void Player::draw() {
 
         if (isColliding) {
             colColor = RED;
-            playerState = PlayerState::DEAD;
         }
 
-        drawSATdebugOutline(width/2, height/2, pos, angle, colColor);
+        //drawSATdebugOutline(width/2, height/2, pos, angle, colColor);
     }
 
     if (playerState == PlayerState::DEAD && explodeTimer.frame < explosions.size() - 1) {
@@ -79,7 +83,13 @@ void Player::draw() {
         DrawTexturePro(explosions[explodeTimer.frame], explode_src, explode_dst, explode_origin, 0, WHITE);
     }
 
-    DrawCircleLines(crosshairPos.x, crosshairPos.y, 3.f, WHITE);
+    float crosshairOffset = 2.f;
+    float crosshairLength = 5.f;
+    DrawLine(crosshairPos.x, crosshairPos.y - crosshairOffset, crosshairPos.x, crosshairPos.y - (crosshairOffset + crosshairLength), WHITE);
+    DrawLine(crosshairPos.x, crosshairPos.y + crosshairOffset, crosshairPos.x, crosshairPos.y + (crosshairOffset + crosshairLength), WHITE);
+
+    DrawLine(crosshairPos.x - crosshairOffset, crosshairPos.y, crosshairPos.x - (crosshairOffset + crosshairLength), crosshairPos.y, WHITE);
+    DrawLine(crosshairPos.x + crosshairOffset, crosshairPos.y, crosshairPos.x + (crosshairOffset + crosshairLength), crosshairPos.y, WHITE);
 }
 
 
@@ -131,27 +141,22 @@ void Player::move() {
 
 
 void Player::mainGunControl(World& world) {
-    float width = static_cast<float>(texture.width);
-    float height = static_cast<float>(texture.height);
-
-    Vector2 playerOrigin = {width / 2, height / 2};
-    Vector2 muzzleLocal = { 0.f, -height / 2};
-    Vector2 rotated = rotatePoint(muzzleLocal, angle);
-    Vector2 muzzleWorld = { pos.x + rotated.x, pos.y + rotated.y };
-
-    Vector2 forward = {sinf(angle), -cosf(angle)};
+    Vector2 target = subVec2(crosshairPos, pos);
+    Vector2 dir = normalize(target);
+    float targetAngle = atan2f(dir.y, dir.x);
+    float angleOffset = PI/2;
 
     if(IsKeyPressed(KEY_ONE)) mainGunAmmoType = ProjectileType::PLASMA;
     if(IsKeyPressed(KEY_TWO)) mainGunAmmoType = ProjectileType::VULCAN;
     if(IsKeyPressed(KEY_THREE)) mainGunAmmoType = ProjectileType::PROTON;
 
     if(IsKeyPressed(KEY_F)) {
-        Projectile newPlayerProj(mainGunAmmoType, angle);
+        Projectile newPlayerProj(mainGunAmmoType, targetAngle - angleOffset);
 
-        newPlayerProj.pos = muzzleWorld;
-        newPlayerProj.velocity = {forward.x * newPlayerProj.speed, forward.y * newPlayerProj.speed};
+        newPlayerProj.pos = pos;
+        newPlayerProj.velocity = {dir.x * newPlayerProj.speed, dir.y * newPlayerProj.speed};
 
-        std::cout << "Projectile fired at pos: " << muzzleWorld.x << "," << muzzleWorld.y << "\n";
+        std::cout << "Projectile fired at pos: " << pos.x << "," << pos.y << "\n";
 
         world.playerProjectiles.push_back(newPlayerProj);
     }
@@ -170,6 +175,7 @@ void Player::update(World& world) {
     updateSATAxisRotation(sat, angle);
 
     checkCollision(world);
+    if (isColliding) playerState = PlayerState::DEAD;
 
     float camera_x_target = pos.x;
     float camera_y_target = pos.y;
@@ -183,7 +189,7 @@ void Player::update(World& world) {
 void Player::checkCollision(World& world) {
     isColliding = false;
     for (auto& e : world.ActiveEnemies) {
-        if (SATvsSAT(sat, e.sat)) {
+        if (SATvsSAT(sat, e.sat) && e.isAlive) {
             isColliding = true;
             e.isColliding = true;
         }

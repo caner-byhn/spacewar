@@ -115,8 +115,14 @@ void World::spawnEnemy(Player& player, std::default_random_engine& enemyGenerato
 }
 
 void World::updateActiveEnemies(Player& player, std::default_random_engine& generator) {
-    for(auto& en : ActiveEnemies) {
-        en.update(player, generator, *this);
+    for (auto it = ActiveEnemies.begin(); it != ActiveEnemies.end(); ) {
+        if (it->readyToRemove) {
+            it = ActiveEnemies.erase(it);
+        }
+        else {
+            it->update(player, generator, *this);
+            ++it;
+        }
     }
 }
 

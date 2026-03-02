@@ -10,6 +10,7 @@ static int SCREEN_HEIGHT = 1080;
 int main() {
     InitWindow(SCREEN_WIDTH, SCREEN_HEIGHT, "Triangle");
     SetTargetFPS(165);
+    HideCursor();
 
     Game game;
 

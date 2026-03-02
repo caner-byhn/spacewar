@@ -21,14 +21,21 @@ enum class Decision {
 
 struct Enemy {
     Vector2 pos;
-    Texture2D& texture;
+    Texture2D* texture;
     Vector2 velocity;
 
     SAT sat;
     bool isColliding = false;
+    bool isAlive = true;
+    bool readyToRemove = false;
 
-    std::vector<Texture2D>& exhaustFrames;
+    std::vector<Texture2D>* explosions;
+    int explosionFrameCount;
+    FrameTimer explodeTimer = {0.1f, 0.0f, 0};
+
+    std::vector<Texture2D>* exhaustFrames;
     int exhaustFrameCount; // Do not touch this unless you change the assets for exhaust.
+    FrameTimer exhaustTimer = {0.1f, 0.0f, 0};
     float frameTime = 0.1f;
     float timer = 0.0f;
     int frame = 0;
