@@ -2,10 +2,11 @@
 #include "enemy.hpp"
 #include "raylib.h"
 #include <iostream>
+#include <random>
 
 Projectile::Projectile(ProjectileType type, float angle) : type(type), angle(angle){
     if (type == ProjectileType::PLASMA) {
-        speed = 700;
+        speed = 2000;
         maxDistanceTraveled = 4000;
     }
     if (type == ProjectileType::VULCAN) {
@@ -60,6 +61,11 @@ void Background::draw(Camera2D& playerCamera) {
 
 
 World::World() {
+    spawner.time = 0.f;
+    spawner.timer = 1.5f;
+    spawner.activeSpawns = 0;
+    spawner.limit = 3;
+
     loadPlayerExhaustFrames();
     loadExplosionFrames();
     loadProjectileFrames();
@@ -110,8 +116,17 @@ void World::loadEnemyTextures() {
 }
 
 void World::spawnEnemy(Player& player, std::default_random_engine& enemyGenerator) {
-    Enemy newEnemy(player, enemyGenerator, *this);
-    ActiveEnemies.push_back(newEnemy);
+    static std::uniform_real_distribution<float> spawnDist(1.f, 2.f);
+
+    spawner.time += GetFrameTime();
+    if (ActiveEnemies.size() < spawner.limit) {
+        if (spawner.time > spawner.timer) {
+            Enemy newEnemy(player, enemyGenerator, *this);
+            ActiveEnemies.push_back(newEnemy);
+            spawner.timer = spawnDist(enemyGenerator);
+            spawner.time = 0.f;
+        }
+    }
 }
 
 void World::updateActiveEnemies(Player& player, std::default_random_engine& generator) {

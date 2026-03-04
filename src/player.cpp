@@ -192,6 +192,9 @@ void Player::checkCollision(World& world) {
         if (SATvsSAT(sat, e.sat) && e.isAlive) {
             isColliding = true;
             e.isColliding = true;
+            std::cout << "Colliding with enemy, at enemy position: " << e.pos.x << ", " << e.pos.y << "\n";
+            std::cout << "Player SAT: " << sat.origin.x << "," << sat.origin.y << "\n";
+            std::cout << "Enemy SAT: " << e.sat.origin.x << "," << e.sat.origin.y << "\n";
         }
         else {
             e.isColliding = false;

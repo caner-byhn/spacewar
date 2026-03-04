@@ -16,6 +16,13 @@ enum class ProjectileType {
     COUNT
 };
 
+struct EnemySpawner {
+    float timer;
+    float time;
+    int activeSpawns;
+    int limit;
+};
+
 struct ProjectileFrames {
     std::vector<Texture2D> frames;
 };
@@ -58,6 +65,7 @@ struct World {
     std::vector<Projectile> playerProjectiles;
     std::vector<Projectile> enemyProjectiles;
 
+    EnemySpawner spawner;
 
     World();
     void loadPlayerExhaustFrames();

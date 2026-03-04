@@ -6,13 +6,13 @@
 
 Game::Game(): player(world) {
     randomGenerator = initEnemyGenerator();
-    world.spawnEnemy(player, randomGenerator);
 }
 
 void Game::update() {
     player.update(world);
     world.updateActiveEnemies(player, randomGenerator);
     world.updateActiveProjectiles();
+    world.spawnEnemy(player, randomGenerator);
 }
 
 void Game::drawBackground() {

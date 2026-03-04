@@ -20,6 +20,7 @@ Enemy::Enemy(Player& player, std::default_random_engine& enemyGenerator, World& 
     Vector2 halfSize = {static_cast<float>((*texture).width) / 4,static_cast<float>((*texture).height) / 4};
     sat.origin = pos;
     sat.halfSize = halfSize;
+    updateSATAxisRotation(sat, angle);
 }
 
 
@@ -86,6 +87,9 @@ void Enemy::draw() {
 
 
 void Enemy::update(Player& player, std::default_random_engine& generator, World& world) {
+    if (explodeTimer.frame >= (*explosions).size() - 1) {
+        readyToRemove = true;
+    }
     if (!isAlive) return;
 
     decide(player);
@@ -94,9 +98,6 @@ void Enemy::update(Player& player, std::default_random_engine& generator, World&
     updateSATAxisRotation(sat, angle);
 
     checkCollision(world);
-    if (explodeTimer.frame > (*explosions).size() - 1) {
-        readyToRemove = true;
-    }
 
     float dt = GetFrameTime();
     float damping = 0.98f;
